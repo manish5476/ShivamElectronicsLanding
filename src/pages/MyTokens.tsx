@@ -24,12 +24,10 @@ export default function MyTokens() {
 
   const loadTokens = () => {
     if (isCustomerLoggedIn && customer?.email) {
-      const userTokens = purchaseTokenService.getUserTokens(customer.email);
+      const userTokens = purchaseTokenService.getUserTokens(customer.email, customer.id);
       setTokens(userTokens);
     } else {
-      // Load all device tokens as guest fallback
-      const deviceTokens = purchaseTokenService.getAllTokens();
-      setTokens(deviceTokens);
+      setTokens([]);
     }
   };
 
@@ -39,14 +37,18 @@ export default function MyTokens() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const filteredTokens = tokens.filter(t => {
-    if (!searchCode.trim()) return true;
-    const q = searchCode.toLowerCase();
-    return (
-      t.tokenCode.toLowerCase().includes(q) ||
-      t.items.some(i => i.name.toLowerCase().includes(q))
-    );
-  });
+  const filteredTokens = isCustomerLoggedIn
+    ? tokens.filter(t => {
+        if (!searchCode.trim()) return true;
+        const q = searchCode.toLowerCase();
+        return (
+          t.tokenCode.toLowerCase().includes(q) ||
+          t.items.some(i => i.name.toLowerCase().includes(q))
+        );
+      })
+    : searchCode.trim().length >= 4
+    ? purchaseTokenService.getAllTokens().filter(t => t.tokenCode.toLowerCase().includes(searchCode.toLowerCase().trim()))
+    : [];
 
   return (
     <div className="min-h-screen bg-[#FAF9F6] py-10 sm:py-16 text-slate-900">
@@ -92,7 +94,7 @@ export default function MyTokens() {
                   className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-xs"
                 >
                   <LogIn size={14} />
-                  <span>Sign In for Linked Tokens</span>
+                  <span>Sign In to View Tokens</span>
                 </button>
               )}
             </div>
@@ -100,20 +102,18 @@ export default function MyTokens() {
         </div>
 
         {/* Search / Filter Bar */}
-        {tokens.length > 0 && (
-          <div className="mb-8">
-            <div className="relative max-w-md">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={searchCode}
-                onChange={e => setSearchCode(e.target.value)}
-                placeholder="Search by Token Code (e.g. SE-...) or product..."
-                className="w-full pl-10 pr-4 py-2.5 text-xs font-medium rounded-full bg-white border border-slate-200 focus:outline-none focus:border-indigo-600 shadow-xs transition-colors"
-              />
-            </div>
+        <div className="mb-8">
+          <div className="relative max-w-md">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchCode}
+              onChange={e => setSearchCode(e.target.value)}
+              placeholder="Enter Token Code (e.g. SE-...) or search product..."
+              className="w-full pl-10 pr-4 py-2.5 text-xs font-medium rounded-full bg-white border border-slate-200 focus:outline-none focus:border-indigo-600 shadow-xs transition-colors"
+            />
           </div>
-        )}
+        </div>
 
         {/* Tokens List */}
         {filteredTokens.length === 0 ? (
@@ -122,12 +122,27 @@ export default function MyTokens() {
               <ShoppingBag size={28} />
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-1">
-              {searchCode ? 'No matching tokens found' : 'No purchase tokens created yet'}
+              {!isCustomerLoggedIn && !searchCode
+                ? 'Sign in to access your purchase tokens'
+                : searchCode
+                ? 'No matching tokens found'
+                : 'No purchase tokens created yet'}
             </h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto mb-6">
-              Browse our collections, add your preferred appliances or electronics to your cart, and click <strong>&quot;Generate Showroom Token&quot;</strong> to lock in festival offers.
+              {!isCustomerLoggedIn && !searchCode
+                ? 'Sign in with your customer account to see all your active and redeemed showroom price lock tokens, or enter your token code above.'
+                : 'Browse our collections, add your preferred appliances or electronics to your cart, and click "Generate Showroom Token" to lock in festival offers.'}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
+              {!isCustomerLoggedIn ? (
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-indigo-600 shadow-md transition-all"
+                >
+                  <User size={14} />
+                  <span>Sign In to Account</span>
+                </button>
+              ) : null}
               <Link
                 to="/products"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 shadow-md transition-all"
@@ -135,15 +150,6 @@ export default function MyTokens() {
                 <span>Browse Products</span>
                 <ArrowRight size={14} />
               </Link>
-              {!isCustomerLoggedIn && (
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-slate-100 text-slate-800 text-xs font-bold hover:bg-slate-200 transition-colors"
-                >
-                  <User size={14} />
-                  <span>Sign In to Your Account</span>
-                </button>
-              )}
             </div>
           </div>
         ) : (

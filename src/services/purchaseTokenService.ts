@@ -253,11 +253,14 @@ export const purchaseTokenService = {
   },
 
   // Retrieve tokens for specific user
-  getUserTokens(userEmail?: string): PurchaseToken[] {
+  getUserTokens(userEmail?: string, customerId?: string): PurchaseToken[] {
+    if (!userEmail && !customerId) return [];
     const all = this.getAllTokens();
-    if (!userEmail) return all;
-    const clean = userEmail.trim().toLowerCase();
-    return all.filter(t => t.customer.email.toLowerCase() === clean);
+    const cleanEmail = userEmail?.trim().toLowerCase();
+    return all.filter(t => 
+      (cleanEmail && t.customer.email.toLowerCase() === cleanEmail) ||
+      (customerId && t.customer.id === customerId)
+    );
   },
 
   // Retrieve single token by tokenCode

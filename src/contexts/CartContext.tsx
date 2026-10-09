@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from 'react';
 import type { Product } from '../types/electronics';
+import { useAuth } from './AuthContext';
 
 export interface CartItem {
   productId: string;
@@ -31,26 +32,126 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_STORAGE_KEY = 'shivam_cart_items_v1';
+const GUEST_CART_KEY = 'shivam_cart_guest_v1';
+const LEGACY_CART_KEY = 'shivam_cart_items_v1';
+
+export const getCustomerCartKey = (customerId: string) => `shivam_cart_user_${customerId}_v1`;
+
+function loadCartItemsForIdentity(userId: string | null): CartItem[] {
+  try {
+    const key = userId ? getCustomerCartKey(userId) : GUEST_CART_KEY;
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+
+    // Clean up legacy single-cart key if present
+    if (!userId) {
+      const legacy = localStorage.getItem(LEGACY_CART_KEY);
+      if (legacy) {
+        localStorage.removeItem(LEGACY_CART_KEY);
+        const parsed = JSON.parse(legacy);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          localStorage.setItem(GUEST_CART_KEY, JSON.stringify(parsed));
+          return parsed;
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return [];
+}
+
+function saveCartItemsForIdentity(userId: string | null, items: CartItem[]) {
+  try {
+    const key = userId ? getCustomerCartKey(userId) : GUEST_CART_KEY;
+    localStorage.setItem(key, JSON.stringify(items));
+  } catch {
+    // ignore
+  }
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { customer } = useAuth();
+  const currentUserId = customer?.id || null;
+
+  // Track the active user ID to manage transition boundaries (Guest -> User, User -> Logout, User A -> User B)
+  const activeUserIdRef = useRef<string | null>(currentUserId);
+
   const [items, setItems] = useState<CartItem[]>(() => {
-    try {
-      const stored = localStorage.getItem(CART_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
+    return loadCartItemsForIdentity(currentUserId);
   });
 
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
 
+  // Sync state whenever customer changes (Log In, Log Out, Switch User)
   useEffect(() => {
-    try {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-    } catch {
-      // ignore
+    const prevUserId = activeUserIdRef.current;
+    const newUserId = customer?.id || null;
+
+    if (prevUserId === newUserId) return;
+
+    // 1. Customer Logged Out (was User A, now null)
+    if (prevUserId && !newUserId) {
+      // Save User A's current items safely to their personal user key
+      saveCartItemsForIdentity(prevUserId, items);
+
+      // Clean slate for the logged out / guest session
+      saveCartItemsForIdentity(null, []);
+      setItems([]);
+      activeUserIdRef.current = null;
+      return;
     }
+
+    // 2. Customer Logged In (was guest null, now User A)
+    if (!prevUserId && newUserId) {
+      const guestItems = items;
+      const userSavedItems = loadCartItemsForIdentity(newUserId);
+
+      let resolvedItems: CartItem[];
+      // If guest had added items right before signing in, merge them with the user's account cart
+      if (guestItems.length > 0) {
+        const itemMap = new Map<string, CartItem>();
+        userSavedItems.forEach(item => itemMap.set(item.productId, { ...item }));
+        guestItems.forEach(item => {
+          if (itemMap.has(item.productId)) {
+            const existing = itemMap.get(item.productId)!;
+            itemMap.set(item.productId, {
+              ...existing,
+              quantity: existing.quantity + item.quantity,
+            });
+          } else {
+            itemMap.set(item.productId, { ...item });
+          }
+        });
+        resolvedItems = Array.from(itemMap.values());
+        // Clean out guest storage after merge
+        saveCartItemsForIdentity(null, []);
+      } else {
+        resolvedItems = userSavedItems;
+      }
+
+      saveCartItemsForIdentity(newUserId, resolvedItems);
+      setItems(resolvedItems);
+      activeUserIdRef.current = newUserId;
+      return;
+    }
+
+    // 3. User Switch (User A -> User B)
+    if (prevUserId && newUserId && prevUserId !== newUserId) {
+      saveCartItemsForIdentity(prevUserId, items);
+      const userBItems = loadCartItemsForIdentity(newUserId);
+      setItems(userBItems);
+      activeUserIdRef.current = newUserId;
+      return;
+    }
+  }, [customer?.id]);
+
+  // Persist items whenever items list changes
+  useEffect(() => {
+    saveCartItemsForIdentity(activeUserIdRef.current, items);
   }, [items]);
 
   const addToCart = (product: Product, quantity: number = 1) => {
@@ -110,6 +211,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
+    saveCartItemsForIdentity(activeUserIdRef.current, []);
   };
 
   const totalItems = items.reduce((acc, i) => acc + i.quantity, 0);

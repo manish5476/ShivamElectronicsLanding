@@ -225,6 +225,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setCustomer(null);
     localStorage.removeItem(CUSTOMER_STORAGE_KEY);
+    try {
+      localStorage.removeItem('shivam_cart_guest_v1');
+      localStorage.removeItem('shivam_cart_items_v1');
+    } catch {
+      // ignore
+    }
   };
 
   const updateCustomerProfile = (data: Partial<CustomerUser>) => {

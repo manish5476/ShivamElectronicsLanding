@@ -101,12 +101,23 @@ export default function CartDrawer() {
             </div>
           </div>
 
-          <button
-            onClick={closeCart}
-            className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors"
-          >
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-2">
+            {items.length > 0 && (
+              <button
+                onClick={clearCart}
+                className="px-2.5 py-1 rounded-full text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                title="Empty cart"
+              >
+                Clear Cart
+              </button>
+            )}
+            <button
+              onClick={closeCart}
+              className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Items Body */}
