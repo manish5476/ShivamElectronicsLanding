@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, Phone, MapPin, Clock, MessageSquare,
   Sparkles, Star, ShieldCheck, Camera,
-  Tv, Bed, Eye, Truck, CheckCircle2
+  Tv, Bed, Eye, Truck, CheckCircle2, ChevronLeft, ChevronRight, Play, Pause
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useProducts, useBanners } from '../hooks/useElectronicsData';
-import type { Product } from '../types/electronics';
+import { DEFAULT_SHOWROOM_BANNERS } from '../services/electronicsApi';
+import type { Product, Banner } from '../types/electronics';
 import EnquiryModal from '../components/EnquiryModal';
 
 // ─── Verified High-Definition Showroom Photography (Clean Showroom Assets) ──
@@ -30,12 +32,29 @@ export default function ElectronicsHome() {
   const [isEnquiryOpen, setIsEnquiryOpen] = useState(false);
   const [enquiryProduct, setEnquiryProduct] = useState<{ id: string; name: string; sku?: string } | undefined>(undefined);
 
+  // Dynamic slides supporting as many images as added in config
+  const slides: Banner[] = banners && banners.length > 0 ? banners : DEFAULT_SHOWROOM_BANNERS;
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Auto-play timer (5.5 seconds per slide)
+  useEffect(() => {
+    if (isPaused || slides.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % slides.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [isPaused, slides.length]);
+
+  const nextSlide = () => setCurrentSlide(prev => (prev + 1) % slides.length);
+  const prevSlide = () => setCurrentSlide(prev => (prev - 1 + slides.length) % slides.length);
+
+  const activeSlide = slides[currentSlide] || slides[0] || DEFAULT_SHOWROOM_BANNERS[0];
+
   const openEnquiry = (prod?: { id: string; name: string; sku?: string }) => {
     setEnquiryProduct(prod);
     setIsEnquiryOpen(true);
   };
-
-  const mainBanner = banners?.[0];
 
   // Dynamic products derived from the real 32+ catalogue in Supabase
   const featuredPieces = products.filter(p => p.featured || p.popular).slice(0, 6).length > 0
@@ -59,34 +78,53 @@ export default function ElectronicsHome() {
     <div className="flex flex-col min-h-screen bg-[var(--color-bg,#FAF9F6)] text-[var(--color-text,#0F172A)] font-sans">
 
       {/* ══════════════════════════════════════════════════════════════════════
-          1. FULL-WIDTH RECTANGULAR ARCHITECTURAL HERO (NO WASTED SIDE SPACE)
+          1. CINEMATIC MULTI-IMAGE CAROUSEL HERO (AUTOPLAY + SMOOTH ANIMATIONS)
       ══════════════════════════════════════════════════════════════════════ */}
-      <section className="relative w-full overflow-hidden bg-slate-950 border-b border-slate-800">
-        {/* Full-Bleed Authentic Luxury Living Suite Image */}
-        <img
-          src={mainBanner?.desktopImageUrl || HERO_SHOWROOM_IMAGE}
-          alt="Shivam Electronics Flagship Showroom Living Suite"
-          className="absolute inset-0 w-full h-full object-cover object-center transform scale-[1.01]"
-          onError={(e) => { e.currentTarget.src = HERO_SHOWROOM_IMAGE; }}
-          loading="eager"
-        />
+      <section
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        className="relative w-full overflow-hidden bg-slate-950 border-b border-slate-800 select-none group"
+      >
+        {/* Animated Slide Background with Ken Burns Zoom Effect */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeSlide.id || currentSlide}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: 'easeInOut' }}
+            className="absolute inset-0 w-full h-full"
+          >
+            <motion.img
+              initial={{ scale: 1.0 }}
+              animate={{ scale: 1.05 }}
+              transition={{ duration: 7, ease: 'easeOut' }}
+              src={activeSlide.desktopImageUrl || HERO_SHOWROOM_IMAGE}
+              alt={activeSlide.title}
+              className="w-full h-full object-cover object-center"
+              onError={(e) => { e.currentTarget.src = HERO_SHOWROOM_IMAGE; }}
+              loading="eager"
+            />
+          </motion.div>
+        </AnimatePresence>
 
-        {/* Cinematic Environmental Gradient Overlay (Edge-to-Edge) */}
+        {/* Cinematic Multi-stop Environmental Gradient Overlay */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none z-10"
           style={{
             background:
-              'linear-gradient(90deg, rgba(11,15,25,0.96) 0%, rgba(11,15,25,0.85) 45%, rgba(11,15,25,0.35) 75%, rgba(11,15,25,0.6) 100%)',
+              'linear-gradient(90deg, rgba(11,15,25,0.95) 0%, rgba(11,15,25,0.85) 45%, rgba(11,15,25,0.4) 75%, rgba(11,15,25,0.65) 100%)',
           }}
         />
 
-        {/* Expansive Inner Content Container */}
-        <div className="relative z-10 max-w-[1440px] mx-auto w-full min-h-[580px] sm:min-h-[660px] lg:min-h-[720px] flex flex-col justify-between py-10 sm:py-14 lg:py-16 px-6 sm:px-10 lg:px-16">
+        {/* Expansive Inner Content Stage */}
+        <div className="relative z-20 max-w-[1440px] mx-auto w-full min-h-[590px] sm:min-h-[670px] lg:min-h-[730px] flex flex-col justify-between py-10 sm:py-14 lg:py-16 px-6 sm:px-10 lg:px-16">
+          
           {/* Top Meta Strip */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/90 backdrop-blur-md text-xs font-bold text-white shadow-sm border border-white/15">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>FLAGSHIP SHOWROOM · JOLVA, SURAT</span>
+              <span>{activeSlide.subtitle || 'FLAGSHIP SHOWROOM · JOLVA, SURAT'}</span>
             </div>
 
             <div className="hidden sm:flex items-center gap-2">
@@ -99,83 +137,152 @@ export default function ElectronicsHome() {
             </div>
           </div>
 
-          {/* Center Left Editorial Panel */}
-          <div className="max-w-2xl py-6 sm:py-10 space-y-4 sm:space-y-5">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-[0.2em] bg-amber-400/20 text-amber-300 border border-amber-400/30 backdrop-blur-sm">
-              <Sparkles size={13} className="text-amber-400" />
-              <span>Electronics · Appliances · Furniture</span>
-            </div>
+          {/* Animated Center Editorial Content */}
+          <div className="max-w-2xl py-6 sm:py-8 space-y-4 sm:space-y-5">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`content-${activeSlide.id || currentSlide}`}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                className="space-y-4 sm:space-y-5"
+              >
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-[0.2em] bg-amber-400/20 text-amber-300 border border-amber-400/30 backdrop-blur-sm">
+                  <Sparkles size={13} className="text-amber-400" />
+                  <span>Showroom Featured Showcase · Slide {currentSlide + 1} of {slides.length}</span>
+                </div>
 
-            <h1
-              className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.05]"
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
-              Curated for Your <br className="hidden sm:block" />
-              <span className="bg-gradient-to-r from-white via-indigo-200 to-amber-200 bg-clip-text text-transparent">
-                Modern Living.
-              </span>
-            </h1>
-
-            <p className="text-slate-300 text-sm sm:text-base lg:text-lg leading-relaxed max-w-xl font-normal">
-              Experience side-by-side 4K OLED home entertainment, inverter cooling, smart fabric care, and handcrafted solid teakwood furniture under one prestigious roof in Jolva.
-            </p>
-
-            {/* Quick Department Jump Chips */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 pb-2">
-              {[
-                { label: '4K Smart TVs', path: '/categories/televisions' },
-                { label: 'Refrigerators', path: '/categories/refrigerators' },
-                { label: 'Inverter ACs', path: '/categories/air-conditioners' },
-                { label: 'Solid Teak Beds', path: '/categories/beds' },
-                { label: 'Steel Almirahs', path: '/categories/almirahs' },
-              ].map((pill, pIdx) => (
-                <Link
-                  key={pIdx}
-                  to={pill.path}
-                  className="text-xs font-semibold text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1 rounded-full backdrop-blur-md transition-all border border-white/10"
+                <h1
+                  className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.05]"
+                  style={{ fontFamily: 'var(--font-heading)' }}
                 >
-                  {pill.label}
-                </Link>
-              ))}
-            </div>
+                  {activeSlide.title}
+                </h1>
 
-            {/* Action Row */}
-            <div className="flex flex-wrap items-center gap-3.5 pt-2">
-              <Link
-                to="/products"
-                className="px-8 py-4 rounded-full bg-white text-slate-950 font-extrabold text-xs sm:text-sm tracking-wider uppercase shadow-xl hover:bg-indigo-50 hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-2.5"
-              >
-                <span>Explore Catalogue</span>
-                <ArrowRight size={15} />
-              </Link>
+                <p className="text-slate-300 text-sm sm:text-base lg:text-lg leading-relaxed max-w-xl font-normal">
+                  {activeSlide.description ||
+                    'Experience side-by-side 4K OLED home entertainment, inverter cooling, smart fabric care, and handcrafted solid teakwood furniture under one prestigious roof in Jolva.'}
+                </p>
 
-              <button
-                onClick={() => openEnquiry()}
-                className="px-7 py-4 rounded-full bg-slate-900/80 hover:bg-slate-800 text-xs sm:text-sm font-bold text-white transition-all inline-flex items-center gap-2 border border-white/20 backdrop-blur-md hover:scale-102"
-              >
-                <MessageSquare size={15} />
-                <span>Enquire Showroom Price</span>
-              </button>
-            </div>
+                {/* Quick Department Jump Chips */}
+                <div className="flex flex-wrap items-center gap-2 pt-1 pb-1">
+                  {[
+                    { label: '4K Smart TVs', path: '/categories/televisions' },
+                    { label: 'Refrigerators', path: '/categories/refrigerators' },
+                    { label: 'Inverter ACs', path: '/categories/air-conditioners' },
+                    { label: 'Solid Teak Beds', path: '/categories/beds' },
+                    { label: 'Steel Almirahs', path: '/categories/almirahs' },
+                  ].map((pill, pIdx) => (
+                    <Link
+                      key={pIdx}
+                      to={pill.path}
+                      className="text-xs font-semibold text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1 rounded-full backdrop-blur-md transition-all border border-white/10"
+                    >
+                      {pill.label}
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Action Row */}
+                <div className="flex flex-wrap items-center gap-3.5 pt-2">
+                  <Link
+                    to={activeSlide.ctaLink || '/products'}
+                    className="px-8 py-4 rounded-full bg-white text-slate-950 font-extrabold text-xs sm:text-sm tracking-wider uppercase shadow-xl hover:bg-indigo-50 hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-2.5"
+                  >
+                    <span>{activeSlide.ctaText || 'Explore Catalogue'}</span>
+                    <ArrowRight size={15} />
+                  </Link>
+
+                  <button
+                    onClick={() => openEnquiry()}
+                    className="px-7 py-4 rounded-full bg-slate-900/80 hover:bg-slate-800 text-xs sm:text-sm font-bold text-white transition-all inline-flex items-center gap-2 border border-white/20 backdrop-blur-md hover:scale-102"
+                  >
+                    <MessageSquare size={15} />
+                    <span>Enquire Showroom Price</span>
+                  </button>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-          {/* Bottom Showroom Guarantee Bar */}
-          <div className="pt-6 border-t border-white/15 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-300">
-            <div className="flex items-center gap-3">
+          {/* Bottom Showroom Guarantee Bar + Interactive Carousel Dock */}
+          <div className="pt-6 border-t border-white/15 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs text-slate-300">
+            
+            {/* Google Ratings & Trust Badges */}
+            <div className="flex flex-wrap items-center gap-5">
               <span className="font-extrabold text-white flex items-center gap-1.5 text-sm">
                 <Star size={14} className="fill-amber-400 text-amber-400" /> 4.9 ★ Google Rated
               </span>
-              <span className="text-white/40">·</span>
-              <span className="text-xs">128+ Verified Reviews in Jolva</span>
+              <span className="text-white/30 hidden sm:inline">·</span>
+              <span className="flex items-center gap-1.5 text-slate-300"><Truck size={13} className="text-emerald-400" /> Free Jolva Delivery</span>
+              <span className="flex items-center gap-1.5 text-slate-300"><ShieldCheck size={13} className="text-indigo-400" /> 100% Brand Warranty</span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-6 text-xs font-semibold text-slate-300">
-              <span className="flex items-center gap-1.5"><Truck size={14} className="text-emerald-400" /> Free Doorstep Delivery</span>
-              <span className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-indigo-400" /> 100% Brand Warranty</span>
-              <span className="flex items-center gap-1.5"><Sparkles size={14} className="text-amber-400" /> Free On-Site Assembly</span>
-            </div>
+            {/* Carousel Slide Switcher Pills Dock */}
+            {slides.length > 1 && (
+              <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 self-start md:self-auto">
+                <button
+                  onClick={prevSlide}
+                  className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                  aria-label="Previous slide"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <div className="flex items-center gap-1.5">
+                  {slides.map((s, idx) => (
+                    <button
+                      key={s.id || idx}
+                      onClick={() => setCurrentSlide(idx)}
+                      className={`relative px-2.5 py-1 rounded-full text-[11px] font-bold transition-all flex items-center gap-1.5 ${
+                        idx === currentSlide
+                          ? 'bg-white text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                      aria-label={`Jump to slide ${idx + 1}`}
+                    >
+                      <span>0{idx + 1}</span>
+                      {idx === currentSlide && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={nextSlide}
+                  className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                  aria-label="Next slide"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
+
           </div>
+
         </div>
+
+        {/* Floating Side Arrow Controls (Visible on hover on desktop) */}
+        {slides.length > 1 && (
+          <>
+            <button
+              onClick={prevSlide}
+              aria-label="Previous slide"
+              className="hidden lg:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-slate-950/60 hover:bg-slate-900 border border-white/20 text-white backdrop-blur-md items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl hover:scale-105 active:scale-95"
+            >
+              <ChevronLeft size={22} />
+            </button>
+            <button
+              onClick={nextSlide}
+              aria-label="Next slide"
+              className="hidden lg:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-slate-950/60 hover:bg-slate-900 border border-white/20 text-white backdrop-blur-md items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl hover:scale-105 active:scale-95"
+            >
+              <ChevronRight size={22} />
+            </button>
+          </>
+        )}
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════════

@@ -733,130 +733,251 @@ export const offersApi = {
 // ============================================
 // BANNERS API
 // ============================================
+const STORAGE_BANNERS_KEY = 'shivam_home_banners_v2';
+
+export const DEFAULT_SHOWROOM_BANNERS: Banner[] = [
+  {
+    id: 'banner-hero-1',
+    title: 'Curated for Your Modern Living.',
+    subtitle: 'FLAGSHIP SHOWROOM · JOLVA, SURAT',
+    description: 'Experience side-by-side 4K OLED home entertainment, inverter cooling, smart fabric care, and handcrafted solid teakwood furniture under one prestigious roof in Jolva.',
+    desktopImageUrl: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1920&q=88',
+    ctaText: 'Explore Catalogue',
+    ctaLink: '/products',
+    ctaTargetType: 'URL',
+    status: 'ACTIVE',
+    displayOrder: 1,
+    priority: 10,
+    backgroundType: 'IMAGE',
+    overlayOpacity: 0.6,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'banner-hero-2',
+    title: 'Cinematic 4K OLED & Dolby Atmos.',
+    subtitle: 'AUTHORIZED SONY BRAVIA, SAMSUNG & LG DISPLAY HUB',
+    description: 'Side-by-side display walls up to 85 inches. True infinite contrast, quantum dot realism, and immersive acoustic audio tuned for festive celebrations.',
+    desktopImageUrl: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=1920&q=88',
+    ctaText: 'Discover 4K Smart TVs',
+    ctaLink: '/categories/televisions',
+    ctaTargetType: 'URL',
+    status: 'ACTIVE',
+    displayOrder: 2,
+    priority: 9,
+    backgroundType: 'IMAGE',
+    overlayOpacity: 0.6,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'banner-hero-3',
+    title: 'Next-Gen Inverter Cooling & Refrigeration.',
+    subtitle: 'VOLTAS · LG DUAL INVERTER · BOSCH GERMAN ENGINEERING',
+    description: 'Energy-efficient 5-star inverter air conditioners, multi-door french door refrigerators, and smart Wi-Fi AI climate systems ready for instant Jolva delivery.',
+    desktopImageUrl: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1920&q=88',
+    ctaText: 'View Cooling Appliances',
+    ctaLink: '/categories/refrigerators',
+    ctaTargetType: 'URL',
+    status: 'ACTIVE',
+    displayOrder: 3,
+    priority: 8,
+    backgroundType: 'IMAGE',
+    overlayOpacity: 0.6,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'banner-hero-4',
+    title: 'Heritage Solid Teakwood & Sheesham Furniture.',
+    subtitle: 'CUSTOM CRAFTSMANSHIP · LIFETIME TIMBER WARRANTY',
+    description: 'King & Queen storage beds, 6-seater dining sets, and solid steel almirahs built with seasoned timber to last for generations.',
+    desktopImageUrl: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1920&q=88',
+    ctaText: 'Explore Teakwood Beds & Furniture',
+    ctaLink: '/categories/beds',
+    ctaTargetType: 'URL',
+    status: 'ACTIVE',
+    displayOrder: 4,
+    priority: 7,
+    backgroundType: 'IMAGE',
+    overlayOpacity: 0.6,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'banner-hero-5',
+    title: 'Festive Mega Deals & 0% EMI Carnival.',
+    subtitle: 'INSTANT AADHAAR & PAN APPROVALS',
+    description: 'Lock your festive showroom price online for 7 days. Avail zero down-payment and zero interest installments on all flagship brands.',
+    desktopImageUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1920&q=88',
+    ctaText: 'Claim 0% EMI Offers',
+    ctaLink: '/offers',
+    ctaTargetType: 'URL',
+    status: 'ACTIVE',
+    displayOrder: 5,
+    priority: 6,
+    backgroundType: 'IMAGE',
+    overlayOpacity: 0.6,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+];
+
+const getStoredBanners = (): Banner[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_BANNERS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return DEFAULT_SHOWROOM_BANNERS;
+};
+
+const saveStoredBanners = (banners: Banner[]) => {
+  try {
+    localStorage.setItem(STORAGE_BANNERS_KEY, JSON.stringify(banners));
+  } catch {}
+};
+
 export const bannersApi = {
   async getAll(): Promise<ApiResponse<Banner[]>> {
-    if (!isSupabaseConfigured()) return { success: true, data: [] };
-    
-    try {
-      const { data, error } = await supabase
-        .from('banners')
-        .select('*')
-        .eq('status', 'ACTIVE')
-        .order('display_order');
-      
-      if (error) {
-        if (isTableMissingError(error)) return { success: true, data: [] };
-        return { success: false, error: error.message };
-      }
-      
-      const banners: Banner[] = (data || []).map((b: any) => ({
-        id: b.id,
-        title: b.title,
-        subtitle: b.subtitle,
-        description: b.description,
-        desktopImageUrl: b.desktop_image_url,
-        mobileImageUrl: b.mobile_image_url,
-        desktopStorageKey: b.desktop_storage_key,
-        mobileStorageKey: b.mobile_storage_key,
-        ctaText: b.cta_text,
-        ctaLink: b.cta_link,
-        ctaTargetType: b.cta_target_type,
-        status: b.status,
-        priority: b.priority,
-        startDate: b.start_date,
-        endDate: b.end_date,
-        displayOrder: b.display_order,
-        backgroundType: b.background_type,
-        overlayOpacity: b.overlay_opacity,
-        createdAt: b.created_at,
-        updatedAt: b.updated_at,
-      }));
-      
-      return { success: true, data: banners };
-    } catch (err: any) {
-      return { success: false, error: err.message };
+    let list = getStoredBanners();
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('banners')
+          .select('*')
+          .eq('status', 'ACTIVE')
+          .order('display_order');
+        
+        if (!error && data && data.length > 0) {
+          const dbBanners: Banner[] = data.map((b: any) => ({
+            id: b.id,
+            title: b.title,
+            subtitle: b.subtitle,
+            description: b.description,
+            desktopImageUrl: b.desktop_image_url,
+            mobileImageUrl: b.mobile_image_url,
+            desktopStorageKey: b.desktop_storage_key,
+            mobileStorageKey: b.mobile_storage_key,
+            ctaText: b.cta_text,
+            ctaLink: b.cta_link,
+            ctaTargetType: b.cta_target_type,
+            status: b.status,
+            priority: b.priority,
+            startDate: b.start_date,
+            endDate: b.end_date,
+            displayOrder: b.display_order,
+            backgroundType: b.background_type,
+            overlayOpacity: b.overlay_opacity,
+            createdAt: b.created_at,
+            updatedAt: b.updated_at,
+          }));
+          list = dbBanners;
+          saveStoredBanners(dbBanners);
+        }
+      } catch {}
     }
+    
+    return { success: true, data: list };
   },
 
   async create(banner: Partial<Banner>): Promise<ApiResponse<Banner>> {
-    if (!isSupabaseConfigured()) return { success: false, error: 'Not configured' };
-    
-    try {
-      const { data, error } = await supabase
-        .from('banners')
-        .insert({
-          title: banner.title,
-          subtitle: banner.subtitle,
-          description: banner.description,
-          desktop_image_url: banner.desktopImageUrl,
-          mobile_image_url: banner.mobileImageUrl,
-          desktop_storage_key: banner.desktopStorageKey,
-          mobile_storage_key: banner.mobileStorageKey,
-          cta_text: banner.ctaText,
-          cta_link: banner.ctaLink,
-          cta_target_type: banner.ctaTargetType,
-          status: banner.status ?? 'DRAFT',
-          priority: banner.priority ?? 0,
-          start_date: banner.startDate,
-          end_date: banner.endDate,
-          display_order: banner.displayOrder ?? 0,
-          background_type: banner.backgroundType ?? 'IMAGE',
-          overlay_opacity: banner.overlayOpacity ?? 0.5,
-        })
-        .select()
-        .single();
-      
-      if (error) return { success: false, error: error.message };
-      return { success: true, data };
-    } catch (err: any) {
-      return { success: false, error: err.message };
+    const newBanner: Banner = {
+      id: banner.id || `banner-${Date.now()}`,
+      title: banner.title || 'Special Showroom Showcase',
+      subtitle: banner.subtitle || 'Jolva Flagship Showroom',
+      description: banner.description || '',
+      desktopImageUrl: banner.desktopImageUrl || 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1920&q=88',
+      mobileImageUrl: banner.mobileImageUrl,
+      desktopStorageKey: banner.desktopStorageKey,
+      mobileStorageKey: banner.mobileStorageKey,
+      ctaText: banner.ctaText || 'Explore Products',
+      ctaLink: banner.ctaLink || '/products',
+      ctaTargetType: banner.ctaTargetType || 'URL',
+      status: banner.status ?? 'ACTIVE',
+      priority: banner.priority ?? 0,
+      startDate: banner.startDate,
+      endDate: banner.endDate,
+      displayOrder: banner.displayOrder ?? Date.now(),
+      backgroundType: banner.backgroundType ?? 'IMAGE',
+      overlayOpacity: banner.overlayOpacity ?? 0.6,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const current = getStoredBanners();
+    current.push(newBanner);
+    saveStoredBanners(current);
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('banners').insert({
+          title: newBanner.title,
+          subtitle: newBanner.subtitle,
+          description: newBanner.description,
+          desktop_image_url: newBanner.desktopImageUrl,
+          mobile_image_url: newBanner.mobileImageUrl,
+          cta_text: newBanner.ctaText,
+          cta_link: newBanner.ctaLink,
+          status: newBanner.status,
+          display_order: newBanner.displayOrder,
+          overlay_opacity: newBanner.overlayOpacity,
+        });
+      } catch {}
     }
+
+    return { success: true, data: newBanner };
   },
 
   async update(id: string, banner: Partial<Banner>): Promise<ApiResponse<Banner>> {
-    if (!isSupabaseConfigured()) return { success: false, error: 'Not configured' };
-    
-    try {
-      const { data, error } = await supabase
-        .from('banners')
-        .update({
-          title: banner.title,
-          subtitle: banner.subtitle,
-          description: banner.description,
-          desktop_image_url: banner.desktopImageUrl,
-          mobile_image_url: banner.mobileImageUrl,
-          cta_text: banner.ctaText,
-          cta_link: banner.ctaLink,
-          cta_target_type: banner.ctaTargetType,
-          status: banner.status,
-          priority: banner.priority,
-          start_date: banner.startDate,
-          end_date: banner.endDate,
-          display_order: banner.displayOrder,
-          background_type: banner.backgroundType,
-          overlay_opacity: banner.overlayOpacity,
-        })
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) return { success: false, error: error.message };
-      return { success: true, data };
-    } catch (err: any) {
-      return { success: false, error: err.message };
+    const current = getStoredBanners();
+    const idx = current.findIndex(b => b.id === id);
+    if (idx !== -1) {
+      current[idx] = { ...current[idx], ...banner, updatedAt: new Date().toISOString() };
+      saveStoredBanners(current);
     }
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase
+          .from('banners')
+          .update({
+            title: banner.title,
+            subtitle: banner.subtitle,
+            description: banner.description,
+            desktop_image_url: banner.desktopImageUrl,
+            mobile_image_url: banner.mobileImageUrl,
+            cta_text: banner.ctaText,
+            cta_link: banner.ctaLink,
+            status: banner.status,
+            display_order: banner.displayOrder,
+            overlay_opacity: banner.overlayOpacity,
+          })
+          .eq('id', id);
+      } catch {}
+    }
+
+    return { success: true, data: (idx !== -1 ? current[idx] : banner) as Banner };
   },
 
   async delete(id: string): Promise<ApiResponse<void>> {
-    if (!isSupabaseConfigured()) return { success: false, error: 'Not configured' };
-    
-    try {
-      const { error } = await supabase.from('banners').delete().eq('id', id);
-      if (error) return { success: false, error: error.message };
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
+    const current = getStoredBanners().filter(b => b.id !== id);
+    saveStoredBanners(current);
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('banners').delete().eq('id', id);
+      } catch {}
     }
+    return { success: true };
+  },
+
+  async resetToDefaults(): Promise<ApiResponse<Banner[]>> {
+    saveStoredBanners(DEFAULT_SHOWROOM_BANNERS);
+    return { success: true, data: DEFAULT_SHOWROOM_BANNERS };
   },
 };
 

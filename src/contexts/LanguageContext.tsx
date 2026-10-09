@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
-export type Language = 'en' | 'gu' | 'hi';
+export type Language = 'en' | 'gu' | 'hi' | 'mr';
 
 export interface LanguageContextType {
   language: Language;
@@ -148,6 +148,52 @@ export const translations: Record<Language, Record<string, string>> = {
     'mobile.tokens': 'टोकन',
     'mobile.showroom': 'शोरूम',
   },
+
+  mr: {
+    // Top strip (Marathi)
+    'strip.flagship': 'शिवम इलेक्ट्रॉनिक्स फ्लॅगशिप दालन · जोलवा, गुजरात',
+    'strip.authorized': '✦ अधिकृत ब्रँड भागीदार (Sony, Samsung, LG, Voltas, Bosch)',
+    'strip.hours': 'आज उघडे आहे: सकाळी 10:00 – रात्री 9:00',
+
+    // Nav Links
+    'nav.home': 'मुख्यपृष्ठ',
+    'nav.collections': 'कलेक्शन्स',
+    'nav.shop': 'सर्व उत्पादने',
+    'nav.brands': 'ब्रँड्स',
+    'nav.gallery': 'दालन गॅलरी',
+    'nav.offers': 'सणासुदीच्या ऑफर्स',
+    'nav.showroom': 'शोरूम आणि नकाशा',
+    'nav.tokens': 'माझे टोकन्स',
+
+    // Header Actions
+    'header.search': 'शोधा',
+    'header.searchPlaceholder': '4K टीव्ही, फ्रिज, सागवान पलंग, इन्व्हर्टर AC शोधा...',
+    'header.cart': 'शोरूम कार्ट',
+    'header.signIn': 'साइन इन',
+    'header.account': 'खाते',
+    'header.signOut': 'साइन आउट',
+    'header.bookVisit': 'शोरूम भेट बुक करा',
+    'header.bookShort': 'भेट बुक करा',
+    'header.call': 'शोरूमला कॉल करा',
+    'header.tokensVoucher': 'शोरूम व्हाउचर पास',
+
+    // CTAs & Badges
+    'cta.addToCart': 'कार्टमध्ये जोडा आणि दर लॉक करा',
+    'cta.lockShowroomPrice': 'शोरूम दर लॉक करा',
+    'cta.whatsappQuote': 'WhatsApp चौकशी',
+    'cta.bookDemo': 'थेट डेमो बुक करा',
+    'cta.inStock': 'जोलवा शोरूममध्ये स्टॉक उपलब्ध',
+    'cta.zeroEmi': '0% बिनव्याजी EMI उपलब्ध',
+    'cta.saved': 'बचत',
+    'cta.perMonth': 'महिना',
+
+    // Mobile Bottom
+    'mobile.home': 'मुख्य',
+    'mobile.shop': 'शॉप',
+    'mobile.cart': 'कार्ट',
+    'mobile.tokens': 'टोकन्स',
+    'mobile.showroom': 'शोरूम',
+  },
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -156,7 +202,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY) as Language;
-      if (stored === 'en' || stored === 'gu' || stored === 'hi') {
+      if (stored === 'en' || stored === 'gu' || stored === 'hi' || stored === 'mr') {
         return stored;
       }
     } catch {

@@ -198,24 +198,25 @@ export default function ElectronicsLayout({ children }: LayoutProps) {
                 <button
                   onClick={() => setIsLangMenuOpen(p => !p)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200/80 text-slate-800 border border-slate-200 transition-colors"
-                  title="Switch Language / ભાષા પસંદ કરો"
+                  title="Switch Language / ભાષા / भाषा निवडा"
                 >
                   <Globe size={13} className="text-indigo-600" />
                   <span className="font-extrabold">
-                    {language === 'gu' ? 'ગુજરાતી' : language === 'hi' ? 'हिंदी' : 'EN'}
+                    {language === 'gu' ? 'ગુજરાતી' : language === 'hi' ? 'हिंदी' : language === 'mr' ? 'मराठी' : 'EN'}
                   </span>
                   <ChevronDown size={11} className="text-slate-400" />
                 </button>
 
                 {isLangMenuOpen && (
-                  <div className="absolute right-0 mt-2.5 w-48 bg-white rounded-3xl shadow-2xl border border-slate-100 py-2.5 z-50 animate-fadeIn">
+                  <div className="absolute right-0 mt-2.5 w-52 bg-white rounded-3xl shadow-2xl border border-slate-100 py-2.5 z-50 animate-fadeIn">
                     <div className="px-4 py-1.5 border-b border-slate-100 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                      Language / ભાષા
+                      Language / भाषा निवडा
                     </div>
                     {[
                       { code: 'en' as const, label: 'English', sub: 'Standard' },
                       { code: 'gu' as const, label: 'ગુજરાતી', sub: 'સ્થાનિક (Jolva / Surat)' },
                       { code: 'hi' as const, label: 'हिंदी', sub: 'राष्ट्रभाषा' },
+                      { code: 'mr' as const, label: 'मराठी', sub: 'स्थानिक बोली (महाराष्ट्र/सुरत)' },
                     ].map(l => (
                       <button
                         key={l.code}
@@ -389,16 +390,17 @@ export default function ElectronicsLayout({ children }: LayoutProps) {
               <nav className="max-w-7xl mx-auto px-6 py-6 flex flex-col gap-2">
                 
                 {/* Mobile Language Switcher Segmented Pills */}
-                <div className="p-1.5 rounded-full bg-slate-100/90 border border-slate-200 flex items-center justify-between gap-1 mb-2">
+                <div className="p-1 rounded-full bg-slate-100/90 border border-slate-200 flex items-center justify-between gap-1 mb-2">
                   {[
-                    { code: 'en' as const, label: 'English' },
+                    { code: 'en' as const, label: 'EN' },
                     { code: 'gu' as const, label: 'ગુજરાતી' },
                     { code: 'hi' as const, label: 'हिंदी' },
+                    { code: 'mr' as const, label: 'मराठी' },
                   ].map(l => (
                     <button
                       key={l.code}
                       onClick={() => setLanguage(l.code)}
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-full transition-all text-center ${
+                      className={`flex-1 py-1.5 text-[11px] font-bold rounded-full transition-all text-center ${
                         language === l.code
                           ? 'bg-slate-900 text-white shadow-xs'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'

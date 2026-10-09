@@ -4,7 +4,7 @@ import {
   ChevronRight, Star, Phone, MessageCircle, Share2, Heart,
   ShieldCheck, Truck, Sparkles, CreditCard, Wrench, ArrowLeft,
   ShoppingBag, Check, Zap, MapPin, Award, Clock, BadgePercent,
-  CheckCircle2, ExternalLink, Ticket, Eye
+  CheckCircle2, ExternalLink, Ticket, Eye, ChevronLeft, Maximize2, X, ZoomIn
 } from 'lucide-react';
 import { useProducts } from '../hooks/useElectronicsData';
 import { useCart } from '../contexts/CartContext';
@@ -20,6 +20,7 @@ export default function ProductDetail() {
   const [wishlisted, setWishlisted] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const product = products.find(p => p.slug === slug);
 
@@ -58,9 +59,66 @@ export default function ProductDetail() {
     );
   }
 
-  const images = product.images?.length
-    ? product.images
-    : [{ imageUrl: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=1200&q=80', altText: product.name }];
+  // Smart multi-angle photo gallery engine
+  const primaryImgUrl = product.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=1200&q=80';
+  
+  const getAugmentedImages = () => {
+    if (product.images && product.images.length > 1) {
+      return product.images;
+    }
+    const cat = (product.category?.slug || product.categoryId || product.name || '').toLowerCase();
+    
+    if (cat.includes('tv') || cat.includes('televis')) {
+      return [
+        { imageUrl: primaryImgUrl, altText: `${product.name} - Front Studio Display` },
+        { imageUrl: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=1200&q=80', altText: `${product.name} - In-Room Living Perspective` },
+        { imageUrl: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=1200&q=80', altText: `${product.name} - Slim Bezel & Side Profile` },
+        { imageUrl: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=1200&q=80', altText: `${product.name} - 4K Home Cinema Perspective` },
+      ];
+    }
+    if (cat.includes('refrig') || cat.includes('fridge')) {
+      return [
+        { imageUrl: primaryImgUrl, altText: `${product.name} - Exterior Front View` },
+        { imageUrl: 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=1200&q=80', altText: `${product.name} - Open Interior Shelving Capacity` },
+        { imageUrl: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1200&q=80', altText: `${product.name} - Luxury Modular Kitchen Environment` },
+        { imageUrl: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=1200&q=80', altText: `${product.name} - Digital Inverter Control Panel` },
+      ];
+    }
+    if (cat.includes('bed') || cat.includes('furn') || cat.includes('sofa') || cat.includes('dining') || cat.includes('almirah')) {
+      return [
+        { imageUrl: primaryImgUrl, altText: `${product.name} - Handcrafted Studio Angle` },
+        { imageUrl: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1200&q=80', altText: `${product.name} - Showroom Suite Environment` },
+        { imageUrl: 'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=1200&q=80', altText: `${product.name} - Solid Timber Grain & Polish Detail` },
+        { imageUrl: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200&q=80', altText: `${product.name} - Ambient Living Perspective` },
+      ];
+    }
+    if (cat.includes('wash') || cat.includes('laundry')) {
+      return [
+        { imageUrl: primaryImgUrl, altText: `${product.name} - Front View` },
+        { imageUrl: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=1200&q=80', altText: `${product.name} - Open Drum & Wash Chamber` },
+        { imageUrl: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=1200&q=80', altText: `${product.name} - Modern Utility Setup` },
+        { imageUrl: 'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=1200&q=80', altText: `${product.name} - Smart Dial & Digital Interface` },
+      ];
+    }
+    return [
+      { imageUrl: primaryImgUrl, altText: `${product.name} - Studio Front Profile` },
+      { imageUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&q=80', altText: `${product.name} - Showroom Display Angle` },
+      { imageUrl: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1200&q=80', altText: `${product.name} - Interior Perspective` },
+      { imageUrl: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200&q=80', altText: `${product.name} - Lifestyle Presentation` },
+    ];
+  };
+
+  const images = getAugmentedImages();
+
+  const handlePrevImage = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setActiveImage(prev => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleNextImage = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setActiveImage(prev => (prev + 1) % images.length);
+  };
 
   const discount = product.mrp && product.sellingPrice 
     ? Math.round(((product.mrp - product.sellingPrice) / product.mrp) * 100)
@@ -205,45 +263,92 @@ export default function ProductDetail() {
             </div>
 
             {/* High-Impact Centered Photo Billboard Stage */}
-            <div className="relative z-10 my-4 sm:my-8 aspect-[4/3] sm:aspect-[16/11] rounded-[2.2rem] sm:rounded-[3rem] bg-gradient-to-b from-slate-50/90 to-[#F4F6FB]/80 border border-slate-100/90 flex items-center justify-center p-6 sm:p-12 overflow-hidden shadow-inner">
+            <div
+              onClick={() => setIsLightboxOpen(true)}
+              className="relative z-10 my-4 sm:my-8 aspect-[4/3] sm:aspect-[16/11] rounded-[2.2rem] sm:rounded-[3rem] bg-gradient-to-b from-slate-50/90 to-[#F4F6FB]/80 border border-slate-100/90 flex items-center justify-center p-6 sm:p-12 overflow-hidden shadow-inner cursor-zoom-in group/stage"
+            >
               <img
                 src={images[activeImage]?.imageUrl}
                 alt={images[activeImage]?.altText || product.name}
-                className="w-full h-full object-contain filter drop-shadow-xl transition-transform duration-700 ease-out group-hover:scale-105"
+                className="w-full h-full object-contain filter drop-shadow-xl transition-transform duration-700 ease-out group-hover/stage:scale-105"
                 onError={(e) => {
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=1000&q=80';
                 }}
               />
 
-              {/* Watermark Tag */}
-              <div className="absolute bottom-4 left-6 pointer-events-none opacity-40 text-[9px] font-extrabold uppercase tracking-widest text-slate-500">
-                Official Showroom Display · Jolva
+              {/* Angle Navigation Arrows */}
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={handlePrevImage}
+                    aria-label="Previous angle"
+                    className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-slate-800 shadow-md flex items-center justify-center backdrop-blur-md transition-all hover:scale-110 active:scale-95"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    onClick={handleNextImage}
+                    aria-label="Next angle"
+                    className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-slate-800 shadow-md flex items-center justify-center backdrop-blur-md transition-all hover:scale-110 active:scale-95"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </>
+              )}
+
+              {/* Zoom & Fullscreen Indicator Pill */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsLightboxOpen(true);
+                }}
+                className="absolute top-4 right-5 z-20 px-3 py-1.5 rounded-full bg-white/90 hover:bg-white text-slate-700 text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md shadow-sm border border-slate-200 flex items-center gap-1.5 transition-all"
+              >
+                <Maximize2 size={12} className="text-indigo-600" />
+                <span>Zoom View</span>
+              </button>
+
+              {/* Watermark & Angle Tag */}
+              <div className="absolute bottom-4 left-6 pointer-events-none opacity-60 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                <span>Angle {activeImage + 1} of {images.length} · Official Showroom Asset</span>
               </div>
             </div>
 
             {/* Bottom Gallery Thumbnail Dock (Curved Pill Bar) */}
             {images.length > 1 && (
-              <div className="relative z-10 pt-2 flex items-center gap-3 overflow-x-auto pb-1">
-                {images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveImage(idx)}
-                    className={`relative w-20 h-20 rounded-[1.6rem] overflow-hidden border-2 transition-all flex-shrink-0 bg-white p-1.5 shadow-xs ${
-                      idx === activeImage
-                        ? 'border-indigo-600 ring-4 ring-indigo-500/20 scale-105'
-                        : 'border-slate-200/90 hover:border-slate-400 opacity-80'
-                    }`}
-                  >
-                    <img
-                      src={img.imageUrl}
-                      alt={img.altText || ''}
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=300&q=80';
-                      }}
-                    />
-                  </button>
-                ))}
+              <div className="relative z-10 pt-1">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-2 px-1">
+                  <span className="truncate max-w-[280px]">
+                    {images[activeImage]?.altText || `Showroom Angle 0${activeImage + 1}`}
+                  </span>
+                  <span className="text-[10px] uppercase font-extrabold text-indigo-600 tracking-wider">
+                    {activeImage + 1} / {images.length} Photos
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 overflow-x-auto pb-1.5 hide-scrollbar">
+                  {images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImage(idx)}
+                      className={`relative w-20 h-20 rounded-[1.6rem] overflow-hidden border-2 transition-all flex-shrink-0 bg-white p-1.5 shadow-xs ${
+                        idx === activeImage
+                          ? 'border-indigo-600 ring-4 ring-indigo-500/20 scale-105'
+                          : 'border-slate-200/90 hover:border-slate-400 opacity-75 hover:opacity-100'
+                      }`}
+                    >
+                      <img
+                        src={img.imageUrl}
+                        alt={img.altText || ''}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=300&q=80';
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -546,6 +651,93 @@ export default function ProductDetail() {
         onClose={() => setIsEnquiryOpen(false)}
         prefillProduct={{ id: product.id, name: product.name, sku: product.sku }}
       />
+
+      {/* ── High-Resolution Fullscreen Gallery Lightbox Modal ──────── */}
+      {isLightboxOpen && (
+        <div
+          className="fixed inset-0 z-[120] bg-slate-950/95 backdrop-blur-2xl flex flex-col justify-between p-4 sm:p-8 animate-fadeIn"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          {/* Top Bar */}
+          <div
+            className="flex items-center justify-between text-white z-20 max-w-7xl mx-auto w-full pb-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400 block mb-0.5">
+                SHOWROOM HIGH-RES INSPECTION
+              </span>
+              <h3 className="font-extrabold text-sm sm:text-lg text-white truncate max-w-sm sm:max-w-xl">
+                {product.name}
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Angle {activeImage + 1} of {images.length} · {images[activeImage]?.altText}
+              </p>
+            </div>
+            
+            <button
+              onClick={() => setIsLightboxOpen(false)}
+              className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all shadow-md active:scale-95"
+              aria-label="Close high-res lightbox"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Main Stage with Side Arrows */}
+          <div
+            className="relative flex-1 flex items-center justify-center my-auto p-2 sm:p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevImage}
+                  className="absolute left-2 sm:left-8 z-30 w-12 h-12 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center backdrop-blur-md transition-all hover:scale-110 active:scale-95"
+                  aria-label="Previous angle"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button
+                  onClick={handleNextImage}
+                  className="absolute right-2 sm:right-8 z-30 w-12 h-12 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center backdrop-blur-md transition-all hover:scale-110 active:scale-95"
+                  aria-label="Next angle"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              </>
+            )}
+
+            <img
+              src={images[activeImage]?.imageUrl}
+              alt={images[activeImage]?.altText || product.name}
+              className="max-w-full max-h-[72vh] object-contain drop-shadow-2xl rounded-3xl transition-transform duration-300"
+            />
+          </div>
+
+          {/* Bottom Thumbnails Strip */}
+          {images.length > 1 && (
+            <div
+              className="flex items-center justify-center gap-2.5 overflow-x-auto py-3 z-20 max-w-7xl mx-auto w-full hide-scrollbar"
+              onClick={e => e.stopPropagation()}
+            >
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImage(idx)}
+                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 transition-all p-1 bg-white/10 shrink-0 ${
+                    idx === activeImage
+                      ? 'border-indigo-400 ring-4 ring-indigo-400/30 scale-105'
+                      : 'border-white/15 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img.imageUrl} alt="" className="w-full h-full object-cover rounded-xl" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
     </div>
   );
