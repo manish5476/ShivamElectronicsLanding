@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Link as LinkIcon, Trash2, Copy, ExternalLink, Search, FileImage } from 'lucide-react';
+import { Upload, Link as LinkIcon, Trash2, Copy, ExternalLink, Search, FileImage, Cloud, Settings, Check, AlertCircle, X } from 'lucide-react';
 import { mediaApi } from '../../services/cmsApi';
+import { cloudinaryService, type CloudinaryConfig } from '../../services/cloudinaryService';
 
 export default function MediaLibrary() {
   const [assets, setAssets] = useState<any[]>([]);
@@ -10,6 +11,9 @@ export default function MediaLibrary() {
   const [altInput, setAltInput] = useState('');
   const [search, setSearch] = useState('');
   const [showUrlForm, setShowUrlForm] = useState(false);
+  const [showCloudinaryModal, setShowCloudinaryModal] = useState(false);
+  const [cConfig, setCConfig] = useState<CloudinaryConfig>(cloudinaryService.getConfig());
+  const [cSaved, setCSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadAssets(); }, []);
@@ -95,10 +99,31 @@ export default function MediaLibrary() {
     <div className="max-w-7xl mx-auto pb-12">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text)] tracking-tight mb-1">Media Library</h1>
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-2xl font-bold text-[var(--color-text)] tracking-tight">Media Library</h1>
+            {cloudinaryService.isConfigured() ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Cloudinary CDN Active
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                Supabase Storage (1GB)
+              </span>
+            )}
+          </div>
           <p className="text-[var(--color-text-soft)] text-sm">{assets.length} images stored in your library</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => setShowCloudinaryModal(true)}
+            className="btn btn-outline btn-sm bg-white gap-1.5"
+            title="Configure Cloudinary CDN for unlimited storage on GitHub Pages"
+          >
+            <Cloud size={15} className="text-indigo-600" />
+            <span>Cloudinary Settings</span>
+          </button>
           <button onClick={() => setShowUrlForm(!showUrlForm)} className="btn btn-outline btn-sm bg-white">
             <LinkIcon size={16} /> 
             <span>Add URL</span>
@@ -110,6 +135,124 @@ export default function MediaLibrary() {
           </label>
         </div>
       </div>
+
+      {/* Cloudinary Configuration Modal */}
+      {showCloudinaryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 sm:p-8 text-slate-900">
+            <button
+              onClick={() => setShowCloudinaryModal(false)}
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <Cloud size={22} />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-slate-900">Cloudinary Integration</h3>
+                <p className="text-xs text-slate-500">Works 100% on GitHub Pages without exposing API secrets</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 mb-5 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-950 space-y-1">
+              <p className="font-bold">✦ Why Cloudinary for GitHub Pages?</p>
+              <p className="text-slate-600">
+                Supabase Free tier offers <strong>1 GB</strong> storage. Cloudinary offers <strong>25 GB</strong> free storage + auto-converts photos to WebP &amp; serves via fast worldwide CDN.
+              </p>
+            </div>
+
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                cloudinaryService.saveConfig(cConfig);
+                setCSaved(true);
+                setTimeout(() => setCSaved(false), 2000);
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Cloud Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={cConfig.cloudName}
+                  onChange={e => setCConfig(c => ({ ...c, cloudName: e.target.value.trim() }))}
+                  placeholder="e.g. dxyz1234"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:border-indigo-600"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">Found in your Cloudinary Dashboard under "Cloud Name".</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Upload Preset (Unsigned) <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={cConfig.uploadPreset}
+                  onChange={e => setCConfig(c => ({ ...c, uploadPreset: e.target.value.trim() }))}
+                  placeholder="e.g. shivam_products_upload"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:border-indigo-600"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  In Cloudinary: <strong>Settings → Upload → Add upload preset</strong> → set Signing Mode to <strong>Unsigned</strong>.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Folder (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={cConfig.folder || ''}
+                  onChange={e => setCConfig(c => ({ ...c, folder: e.target.value.trim() }))}
+                  placeholder="e.g. shivam_electronics"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:border-indigo-600"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    cloudinaryService.clearConfig();
+                    setCConfig({ cloudName: '', uploadPreset: '', folder: '' });
+                    setCSaved(true);
+                    setTimeout(() => setCSaved(false), 2000);
+                  }}
+                  className="text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors"
+                >
+                  Reset to Supabase Storage
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCloudinaryModal(false)}
+                    className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm flex items-center gap-1.5"
+                  >
+                    {cSaved ? <Check size={14} /> : null}
+                    <span>{cSaved ? 'Saved Active!' : 'Save & Activate'}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {showUrlForm && (
         <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 mb-8 shadow-sm">

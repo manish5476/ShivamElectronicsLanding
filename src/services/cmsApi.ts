@@ -1,6 +1,7 @@
 // CMS API Service - Visual CMS operations
 // Gracefully handles missing tables by falling back to localStorage
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { cloudinaryService } from './cloudinaryService';
 
 const isTableMissingError = (error: any): boolean => {
   if (!error) return false;
@@ -184,6 +185,16 @@ export const mediaApi = {
   },
 
   async uploadFile(file: File): Promise<{ success: boolean; url?: string; storageKey?: string; error?: string }> {
+    // 1. Try Cloudinary first if configured (saves Supabase 1GB storage quota)
+    if (cloudinaryService.isConfigured()) {
+      const cRes = await cloudinaryService.uploadImage(file);
+      if (cRes.success && cRes.secureUrl) {
+        return { success: true, url: cRes.secureUrl, storageKey: cRes.publicId };
+      }
+      console.warn('Cloudinary upload warning, falling back to Supabase:', cRes.error);
+    }
+
+    // 2. Fallback to Supabase Storage
     if (!isSupabaseConfigured()) {
       return { success: true, url: URL.createObjectURL(file) };
     }

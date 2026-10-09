@@ -1,5 +1,5 @@
-// Supabase API Service - All database operations go through Supabase
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { cloudinaryService } from './cloudinaryService';
 
 // Helper to detect missing table errors
 const isTableMissingError = (error: any): boolean => {
@@ -417,6 +417,16 @@ export const contactApi = {
 // ============ IMAGE UPLOAD (Supabase Storage) ============
 export const uploadApi = {
   async uploadImage(file: File): Promise<{ success: boolean; url?: string; error?: string }> {
+    // 1. Try Cloudinary first if configured
+    if (cloudinaryService.isConfigured()) {
+      const cRes = await cloudinaryService.uploadImage(file);
+      if (cRes.success && cRes.secureUrl) {
+        return { success: true, url: cRes.secureUrl };
+      }
+      console.warn('Cloudinary upload warning, falling back to Supabase:', cRes.error);
+    }
+
+    // 2. Fallback to Supabase Storage
     if (!isSupabaseConfigured()) {
       return { success: true, url: URL.createObjectURL(file) };
     }
