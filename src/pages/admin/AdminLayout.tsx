@@ -49,6 +49,7 @@ export default function AdminLayout() {
     {
       title: 'Customer & Sales',
       items: [
+        { to: '/admin/orders', icon: ShoppingBag, label: 'Orders & Tokens', permission: PERMISSIONS.BOOKINGS_VIEW },
         { to: '/admin/enquiries', icon: MessageCircle, label: 'Enquiries', permission: PERMISSIONS.BOOKINGS_VIEW },
         { to: '/admin/bookings', icon: Calendar, label: 'Showroom Bookings', permission: PERMISSIONS.BOOKINGS_VIEW },
       ]

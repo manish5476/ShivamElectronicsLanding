@@ -142,7 +142,6 @@ export const purchaseTokenService = {
         },
         items: [
           {
-            id: 'item-seed-1',
             productId: 'prod-sheesham-dining-6',
             name: 'Solid Sheesham Wood 6-Seater Dining Table Set with Cushioned Chairs',
             slug: 'sheesham-wood-6-seater-dining-table-set',
@@ -175,7 +174,6 @@ export const purchaseTokenService = {
         },
         items: [
           {
-            id: 'item-seed-2',
             productId: 'prod-sony-bravia-65',
             name: 'Sony Bravia 65-inch XR 4K OLED Google TV (Cognitive Processor XR)',
             slug: 'sony-bravia-65-xr-oled-4k',
@@ -185,7 +183,6 @@ export const purchaseTokenService = {
             imageUrl: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=600&q=80',
           },
           {
-            id: 'item-seed-3',
             productId: 'prod-sony-soundbar-51',
             name: 'Sony HT-S40R 600W 5.1ch Real Surround Soundbar with Wireless Subwoofer',
             slug: 'sony-ht-s40r-5-1-soundbar',

@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Search, MessageCircle, AlertCircle, CheckCircle, Phone, Mail, Package, Clock, ChevronDown, Calendar, User, FileText, Activity, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import {
+  Search, MessageCircle, AlertCircle, CheckCircle, Phone, Mail,
+  Package, Clock, ChevronDown, Calendar, User, FileText, Activity,
+  X, ShoppingBag, ExternalLink, Ticket
+} from 'lucide-react';
 import { enquiriesApi } from '../../services/electronicsApi';
 import type { Enquiry } from '../../types/electronics';
 
@@ -20,6 +25,43 @@ function timeAgo(dateStr: string) {
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function getEnquiryProductsInfo(e: Enquiry) {
+  if ((e as any).product?.name) {
+    return {
+      isToken: false,
+      tokenCode: null,
+      title: (e as any).product.name,
+      items: [(e as any).product.name],
+    };
+  }
+
+  if (e.message && e.message.includes('[PURCHASE TOKEN:')) {
+    const tokenMatch = e.message.match(/\[PURCHASE TOKEN:\s*([^\]]+)\]/);
+    const tokenCode = tokenMatch ? tokenMatch[1].trim() : null;
+
+    const itemsMatch = e.message.match(/Items:\s*\n([\s\S]+)$/);
+    const itemsList: string[] = [];
+    if (itemsMatch) {
+      const lines = itemsMatch[1].split('\n').map(l => l.trim()).filter(Boolean);
+      itemsList.push(...lines);
+    }
+
+    return {
+      isToken: true,
+      tokenCode,
+      title: itemsList.length > 0 ? itemsList[0] : `Showroom Cart Order (${tokenCode})`,
+      items: itemsList,
+    };
+  }
+
+  return {
+    isToken: false,
+    tokenCode: null,
+    title: 'General Showroom Enquiry',
+    items: [],
+  };
 }
 
 export default function EnquiriesManager() {
@@ -216,23 +258,56 @@ export default function EnquiriesManager() {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 max-w-xs">
-                          <div className="space-y-1">
-                            {(e as any).product?.name ? (
-                              <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
-                                <Package size={14} className="text-gray-400" />
-                                <span className="truncate">{(e as any).product.name}</span>
+                        <td className="px-6 py-4 max-w-sm">
+                          {(() => {
+                            const info = getEnquiryProductsInfo(e);
+                            if (info.isToken) {
+                              return (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-black bg-slate-900 text-amber-300">
+                                      {info.tokenCode}
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                      Cart Order ({info.items.length} items)
+                                    </span>
+                                  </div>
+                                  <p className="text-xs font-bold text-slate-900 line-clamp-1">
+                                    {info.title}
+                                  </p>
+                                  {info.items.length > 1 && (
+                                    <p className="text-[11px] text-slate-500 font-medium">
+                                      + {info.items.length - 1} more items in order
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            }
+                            if ((e as any).product?.name) {
+                              return (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                                    <Package size={14} className="text-indigo-600" />
+                                    <span className="truncate">{(e as any).product.name}</span>
+                                  </div>
+                                  {e.message && (
+                                    <p className="text-xs text-slate-500 truncate">{e.message}</p>
+                                  )}
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                                  <Package size={14} className="text-slate-400" />
+                                  <span>General Showroom Enquiry</span>
+                                </div>
+                                {e.message && (
+                                  <p className="text-xs text-slate-500 truncate">{e.message}</p>
+                                )}
                               </div>
-                            ) : (
-                              <div className="flex items-center gap-2 text-sm font-medium text-gray-500 italic">
-                                <Package size={14} className="text-gray-300" />
-                                <span>General Enquiry</span>
-                              </div>
-                            )}
-                            {e.message && (
-                              <p className="text-xs text-gray-500 truncate">{e.message}</p>
-                            )}
-                          </div>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
@@ -345,30 +420,97 @@ export default function EnquiriesManager() {
               {/* Enquiry Content */}
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <FileText size={14} /> Enquiry Details
+                  <FileText size={14} /> Enquiry Details &amp; Ordered Products
                 </h3>
-                <div className="bg-white border rounded-xl overflow-hidden" style={{ borderColor: 'var(--color-border, #e5e7eb)' }}>
-                  {/* Product */}
-                  <div className="p-4 border-b bg-gray-50/50 flex gap-3" style={{ borderColor: 'var(--color-border, #e5e7eb)' }}>
-                    <Package size={18} className="text-gray-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Interested Product</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {(selected as any).product?.name || 'General Enquiry'}
-                      </p>
-                    </div>
-                  </div>
-                  {/* Message */}
-                  {selected.message && (
-                    <div className="p-4 flex gap-3">
-                      <MessageCircle size={18} className="text-gray-400 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Customer Message</p>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{selected.message}</p>
+                {(() => {
+                  const info = getEnquiryProductsInfo(selected);
+                  if (info.isToken) {
+                    return (
+                      <div className="space-y-4">
+                        {/* Token Banner */}
+                        <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl p-4 shadow-sm border border-indigo-900/40">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="flex items-center gap-1.5 text-xs font-mono font-bold text-amber-300">
+                              <Ticket size={14} /> {info.tokenCode}
+                            </span>
+                            <Link
+                              to="/admin/orders"
+                              className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-200 hover:text-white underline underline-offset-2"
+                            >
+                              Open in Orders Manager <ExternalLink size={12} />
+                            </Link>
+                          </div>
+                          <p className="text-xs text-indigo-200">
+                            Showroom Price Lock &amp; Cart Reservation
+                          </p>
+                        </div>
+
+                        {/* Ordered Products List */}
+                        <div className="bg-white border rounded-2xl overflow-hidden p-4 space-y-3" style={{ borderColor: 'var(--color-border, #e5e7eb)' }}>
+                          <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--color-border, #e5e7eb)' }}>
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                              <ShoppingBag size={14} className="text-indigo-600" />
+                              <span>Ordered Products ({info.items.length})</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                              Cart Order
+                            </span>
+                          </div>
+                          <div className="divide-y divide-slate-100">
+                            {info.items.map((itemText, idx) => (
+                              <div key={idx} className="py-2.5 flex items-start gap-2.5">
+                                <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                                  {idx + 1}
+                                </div>
+                                <div className="text-xs font-semibold text-slate-800 leading-relaxed">
+                                  {itemText}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Full Customer Order Message */}
+                        {selected.message && (
+                          <div className="bg-slate-50 border rounded-2xl p-4 text-xs text-slate-700" style={{ borderColor: 'var(--color-border, #e5e7eb)' }}>
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">
+                              Raw Order Notes &amp; Fulfillment Info
+                            </p>
+                            <p className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-slate-600">
+                              {selected.message}
+                            </p>
+                          </div>
+                        )}
                       </div>
+                    );
+                  }
+
+                  // Non-token standard enquiry
+                  return (
+                    <div className="bg-white border rounded-xl overflow-hidden" style={{ borderColor: 'var(--color-border, #e5e7eb)' }}>
+                      {/* Product */}
+                      <div className="p-4 border-b bg-gray-50/50 flex gap-3" style={{ borderColor: 'var(--color-border, #e5e7eb)' }}>
+                        <Package size={18} className="text-indigo-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Interested Product</p>
+                          <p className="text-sm font-bold text-gray-900">
+                            {(selected as any).product?.name || 'General Showroom Enquiry'}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Message */}
+                      {selected.message && (
+                        <div className="p-4 flex gap-3">
+                          <MessageCircle size={18} className="text-gray-400 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Customer Message</p>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{selected.message}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  );
+                })()}
               </div>
 
               {/* Timeline */}

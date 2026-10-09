@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { 
   Package, FolderOpen, Layers, MessageCircle, 
   ArrowUpRight, AlertCircle, TrendingUp, Clock, 
-  ShoppingBag, Plus, Tag, CheckCircle
+  ShoppingBag, Plus, Tag, CheckCircle, Ticket
 } from 'lucide-react';
 import { dashboardApi, enquiriesApi, productsApi } from '../../services/electronicsApi';
+import { purchaseTokenService } from '../../services/purchaseTokenService';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import type { DashboardStats, Enquiry, Product } from '../../types/electronics';
 
@@ -22,6 +23,8 @@ export default function Dashboard() {
     todayEnquiries: 0,
     featuredProducts: 0,
   });
+  const [orderTokensCount, setOrderTokensCount] = useState(0);
+  const [orderTokensGmv, setOrderTokensGmv] = useState(0);
   const [recentEnquiries, setRecentEnquiries] = useState<Enquiry[]>([]);
   const [recentProducts, setRecentProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +33,14 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
+      // Load local and persisted purchase tokens stats
+      const tokens = purchaseTokenService.getAllTokens();
+      setOrderTokensCount(tokens.length);
+      const activeGmv = tokens
+        .filter(t => t.status === 'ACTIVE')
+        .reduce((sum, t) => sum + t.totalAmount, 0);
+      setOrderTokensGmv(activeGmv);
+
       const statsRes = await dashboardApi.getStats();
       if (statsRes.success && statsRes.data) setStats(statsRes.data);
 
@@ -89,6 +100,9 @@ export default function Dashboard() {
             <p className="text-lg text-[var(--color-text-muted)] max-w-2xl">Monitor your catalogue performance, review recent customer enquiries, and manage your storefront.</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <Link to="/admin/orders" className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-sm">
+              <ShoppingBag size={15} /> Orders &amp; Tokens
+            </Link>
             <Link to="/admin/products" className="inline-flex items-center gap-2 px-4 py-2.5 bg-[var(--color-primary)] text-white text-xs font-bold rounded-xl hover:opacity-90 transition-all shadow-sm">
               <Plus size={15} /> Add Product
             </Link>
@@ -107,7 +121,17 @@ export default function Dashboard() {
 
       {/* 2. BUSINESS SNAPSHOT - Glassmorphic Metric Panels */}
       <section>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          <Link to="/admin/orders" className="glass-card p-5 rounded-2xl border border-[var(--color-border)] hover:border-indigo-400 transition-colors group block">
+            <div className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 mb-1 flex items-center justify-between">
+              <span>Orders &amp; Tokens</span>
+              <Ticket size={12} className="text-indigo-500" />
+            </div>
+            <div className="flex items-end gap-2">
+              <div className="text-3xl font-extrabold text-[var(--color-text)] leading-none">{orderTokensCount}</div>
+              <div className="text-xs font-bold text-indigo-600 mb-0.5">₹{orderTokensGmv.toLocaleString('en-IN')}</div>
+            </div>
+          </Link>
           <div className="glass-card p-5 rounded-2xl border border-[var(--color-border)]">
             <div className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Products</div>
             <div className="flex items-end gap-2">
@@ -215,12 +239,24 @@ export default function Dashboard() {
                   {enquiry.message || 'No message provided.'}
                 </p>
                 
-                {enquiry.product && (
+                {enquiry.product ? (
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-primary)]">
                     <ShoppingBag size={12} />
                     <span>{enquiry.product.name}</span>
                   </div>
-                )}
+                ) : enquiry.message && enquiry.message.includes('[PURCHASE TOKEN:') ? (() => {
+                  const tokenMatch = enquiry.message.match(/\[PURCHASE TOKEN:\s*([^\]]+)\]/);
+                  const tokenCode = tokenMatch ? tokenMatch[1].trim() : '';
+                  const itemsMatch = enquiry.message.match(/Items:\s*\n([^\n]+)/);
+                  const firstItem = itemsMatch ? itemsMatch[1].trim() : 'Cart Reservation';
+                  return (
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/60 px-2 py-1 rounded-lg">
+                      <Ticket size={12} className="text-indigo-600 shrink-0" />
+                      <span className="font-mono font-bold">{tokenCode}</span>
+                      <span className="text-slate-600 truncate">· {firstItem}</span>
+                    </div>
+                  );
+                })() : null}
                 
                 <div className="text-xs text-[var(--color-text-muted)] mt-2 font-medium">
                   {new Date(enquiry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}

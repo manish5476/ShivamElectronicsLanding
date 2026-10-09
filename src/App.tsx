@@ -40,6 +40,7 @@ import MediaLibrary from './pages/admin/MediaLibrary';
 import UsersManager from './pages/admin/UsersManager';
 import ActivityLog from './pages/admin/ActivityLog';
 import SiteSettingsManager from './pages/admin/SiteSettingsManager';
+import OrdersManager from './pages/admin/OrdersManager';
 
 export default function App() {
   const [isEnquiryModalOpen, setIsEnquiryModalOpen] = useState(false);
@@ -63,6 +64,7 @@ export default function App() {
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<Dashboard />} />
                   <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="orders" element={<OrdersManager />} />
                   <Route path="products" element={<ProductsManager />} />
                   <Route path="inventory" element={<InventoryManager />} />
                   <Route path="categories" element={<CategoriesManager />} />
