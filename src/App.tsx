@@ -19,6 +19,7 @@ import { Privacy, Terms } from './pages/StaticPages';
 import NotFound from './pages/NotFound';
 import MyTokens from './pages/MyTokens';
 import { CartProvider } from './contexts/CartContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import CartDrawer from './components/CartDrawer';
 
 // Admin pages
@@ -52,9 +53,10 @@ export default function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <SiteSettingsProvider>
-          <CartProvider>
-            <HashRouter>
+        <LanguageProvider>
+          <SiteSettingsProvider>
+            <CartProvider>
+              <HashRouter>
               <Routes>
                 {/* Admin Routes */}
                 <Route path="/admin/login" element={<AdminLogin />} />
@@ -109,6 +111,7 @@ export default function App() {
             </HashRouter>
           </CartProvider>
         </SiteSettingsProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </AuthProvider>
   );
