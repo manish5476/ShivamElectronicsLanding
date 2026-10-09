@@ -122,13 +122,136 @@ export const purchaseTokenService = {
     return { success: true, token };
   },
 
+  // Default sample tokens for initial inspection
+  getSeedTokens(): PurchaseToken[] {
+    const now = new Date();
+    const expiry = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000);
+    return [
+      {
+        id: 'tok-seed-3670',
+        tokenCode: 'SE-ZXYR-3670',
+        createdAt: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+        expiresAt: expiry.toISOString(),
+        status: 'ACTIVE',
+        customer: {
+          id: 'cust-dummy-1',
+          name: 'Prakash Patel',
+          email: 'dummy.mail.me',
+          phone: '+91 98251 44102',
+          address: 'A-204, Riverview Residency, Jolva, Surat',
+        },
+        items: [
+          {
+            id: 'item-seed-1',
+            productId: 'prod-sheesham-dining-6',
+            name: 'Solid Sheesham Wood 6-Seater Dining Table Set with Cushioned Chairs',
+            slug: 'sheesham-wood-6-seater-dining-table-set',
+            sellingPrice: 32990,
+            mrp: 48000,
+            quantity: 1,
+            imageUrl: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=600&q=80',
+          },
+        ],
+        totalAmount: 32990,
+        totalMrp: 48000,
+        totalSavings: 15010,
+        estimatedMonthlyEmi: 2749,
+        fulfillmentType: 'SHOWROOM_PICKUP',
+        paymentPreference: 'PAY_AT_SHOWROOM',
+        notes: 'Customer requested inspection of dark walnut wood polish before delivery.',
+      },
+      {
+        id: 'tok-seed-8910',
+        tokenCode: 'SE-OLED-8910',
+        createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        expiresAt: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'ACTIVE',
+        customer: {
+          id: 'cust-dummy-2',
+          name: 'Mehul B. Shah',
+          email: 'mehul.shah@example.com',
+          phone: '+91 94280 51920',
+          address: 'Plot 18, Shree Ram Nagar, Kadodara Road, Jolva',
+        },
+        items: [
+          {
+            id: 'item-seed-2',
+            productId: 'prod-sony-bravia-65',
+            name: 'Sony Bravia 65-inch XR 4K OLED Google TV (Cognitive Processor XR)',
+            slug: 'sony-bravia-65-xr-oled-4k',
+            sellingPrice: 169990,
+            mrp: 249990,
+            quantity: 1,
+            imageUrl: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=600&q=80',
+          },
+          {
+            id: 'item-seed-3',
+            productId: 'prod-sony-soundbar-51',
+            name: 'Sony HT-S40R 600W 5.1ch Real Surround Soundbar with Wireless Subwoofer',
+            slug: 'sony-ht-s40r-5-1-soundbar',
+            sellingPrice: 24990,
+            mrp: 34990,
+            quantity: 1,
+            imageUrl: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=600&q=80',
+          },
+        ],
+        totalAmount: 194980,
+        totalMrp: 284980,
+        totalSavings: 90000,
+        estimatedMonthlyEmi: 16248,
+        fulfillmentType: 'DOORSTEP_DELIVERY',
+        paymentPreference: 'ZERO_COST_EMI',
+        notes: '0% EMI pre-approved with Aadhaar. Needs free wall mounting installation.',
+      },
+    ];
+  },
+
   // Retrieve all tokens saved on device
   getAllTokens(): PurchaseToken[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
     } catch {
-      return [];
+      // ignore
+    }
+    const seed = this.getSeedTokens();
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+    } catch {}
+    return seed;
+  },
+
+  // Update token status
+  updateTokenStatus(idOrCode: string, status: 'ACTIVE' | 'REDEEMED' | 'EXPIRED', notes?: string): PurchaseToken | null {
+    const list = this.getAllTokens();
+    const idx = list.findIndex(t => t.id === idOrCode || t.tokenCode.toUpperCase() === idOrCode.toUpperCase());
+    if (idx === -1) return null;
+
+    list[idx] = {
+      ...list[idx],
+      status,
+      notes: notes !== undefined ? notes : list[idx].notes,
+    };
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    } catch {}
+
+    return list[idx];
+  },
+
+  // Delete token
+  deleteToken(idOrCode: string): boolean {
+    const list = this.getAllTokens();
+    const filtered = list.filter(t => t.id !== idOrCode && t.tokenCode.toUpperCase() !== idOrCode.toUpperCase());
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+      return true;
+    } catch {
+      return false;
     }
   },
 

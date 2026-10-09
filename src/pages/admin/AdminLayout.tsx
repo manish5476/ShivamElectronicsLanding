@@ -5,7 +5,7 @@ import {
   MessageCircle, LayoutGrid, Palette, FileImage, 
   Users, Activity, Globe, Settings, Menu, X, 
   ExternalLink, LogOut, Bell, Search, ChevronDown, User,
-  Building2, Warehouse, Calendar, FileText
+  Building2, Warehouse, Calendar, FileText, ShoppingBag
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PERMISSIONS } from '../../lib/permissions';
