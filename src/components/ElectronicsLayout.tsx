@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu, X, Search, Phone, ArrowRight, MapPin, Clock, Mail,
-  ShieldCheck, Truck, Sparkles, ChevronUp, ExternalLink
+  ShieldCheck, Truck, Sparkles, ChevronUp, ExternalLink,
+  ShoppingBag, User, Ticket, LogOut, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
+import CustomerAuthModal from './CustomerAuthModal';
 import { companyApi, DEFAULT_COMPANY_PROFILE } from '../services/companyApi';
 import type { CompanyProfile } from '../types/business';
 
@@ -46,6 +50,11 @@ export default function ElectronicsLayout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const { totalItems, openCart } = useCart();
+  const { customer, isCustomerLoggedIn, signOut } = useAuth();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
   useEffect(() => {
     companyApi.getProfile().then(res => {
       if (res.data) setProfile(res.data);
@@ -61,6 +70,7 @@ export default function ElectronicsLayout({ children }: LayoutProps) {
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsSearchOpen(false);
+    setIsUserMenuOpen(false);
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
@@ -172,7 +182,7 @@ export default function ElectronicsLayout({ children }: LayoutProps) {
             </nav>
 
             {/* Right Action Tools */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-2.5">
               <button
                 onClick={() => setIsSearchOpen(p => !p)}
                 aria-label="Search Catalog"
@@ -182,11 +192,83 @@ export default function ElectronicsLayout({ children }: LayoutProps) {
                 <Search size={18} />
               </button>
 
+              {/* Shopping Cart Button with Count Badge */}
+              <button
+                onClick={openCart}
+                aria-label="View Shopping Cart"
+                className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-700 transition-colors"
+                title="Shopping Cart & Showroom Tokens"
+              >
+                <ShoppingBag size={18} />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-indigo-600 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
+                    {totalItems}
+                  </span>
+                )}
+              </button>
+
+              {/* Customer Account / Sign In Dropdown */}
+              <div className="relative">
+                {isCustomerLoggedIn && customer ? (
+                  <div>
+                    <button
+                      onClick={() => setIsUserMenuOpen(p => !p)}
+                      className="flex items-center gap-2 py-1 px-2 sm:px-2.5 rounded-full hover:bg-slate-100 border border-slate-200 transition-colors"
+                      title="Customer Profile & Tokens"
+                    >
+                      <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                        {customer.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="hidden sm:inline text-xs font-bold text-slate-800 max-w-[80px] truncate">
+                        {customer.name.split(' ')[0]}
+                      </span>
+                      <ChevronDown size={12} className="text-slate-400 hidden sm:inline" />
+                    </button>
+
+                    {isUserMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-fadeIn">
+                        <div className="px-4 py-2 border-b border-slate-100">
+                          <p className="text-xs font-bold text-slate-900 truncate">{customer.name}</p>
+                          <p className="text-[11px] text-slate-500 truncate">{customer.email}</p>
+                        </div>
+                        <Link
+                          to="/my-tokens"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Ticket size={15} className="text-indigo-600" />
+                          <span>My Showroom Tokens</span>
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            signOut();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors text-left"
+                        >
+                          <LogOut size={15} />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsAuthModalOpen(true)}
+                    className="flex items-center gap-1.5 py-1.5 px-3 text-xs font-bold rounded-full hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors"
+                    title="Customer Sign In"
+                  >
+                    <User size={15} />
+                    <span className="hidden sm:inline">Sign In</span>
+                  </button>
+                )}
+              </div>
+
               <Link
                 to="/contact?tab=booking"
-                className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-full bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md transition-all active:scale-95 shadow-sm"
+                className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-full bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md transition-all active:scale-95 shadow-sm"
               >
-                <span>Book Showroom Visit</span>
+                <span>Book Visit</span>
                 <ArrowRight size={13} />
               </Link>
 
@@ -255,7 +337,53 @@ export default function ElectronicsLayout({ children }: LayoutProps) {
                     {link.label}
                   </Link>
                 ))}
-                <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-3">
+
+                {/* Showroom Tokens Link */}
+                <Link
+                  to="/my-tokens"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between px-4 py-3 text-sm font-bold rounded-xl text-indigo-700 bg-indigo-50/70 hover:bg-indigo-50 transition-colors"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Ticket size={16} className="text-indigo-600" />
+                    My Showroom Tokens
+                  </span>
+                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-indigo-600 text-white">Vouchers</span>
+                </Link>
+
+                {/* Customer Account / Sign In State */}
+                <div className="pt-2">
+                  {isCustomerLoggedIn && customer ? (
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-slate-900">{customer.name}</p>
+                        <p className="text-[11px] text-slate-500">{customer.email}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          signOut();
+                        }}
+                        className="text-xs font-bold text-rose-600 hover:underline px-2 py-1"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setIsAuthModalOpen(true);
+                      }}
+                      className="flex items-center justify-center gap-2 w-full py-3 text-xs font-bold rounded-xl border border-slate-300 text-slate-800 hover:bg-slate-50 transition-colors"
+                    >
+                      <User size={15} />
+                      <span>Sign In / Create Account</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="mt-2 pt-4 border-t border-slate-100 flex flex-col gap-3">
                   <Link
                     to="/contact?tab=booking"
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -508,50 +636,70 @@ export default function ElectronicsLayout({ children }: LayoutProps) {
       {/* Mobile Bottom Navigation Bar */}
       <nav
         aria-label="Mobile Navigation"
-        className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-white/95 backdrop-blur-md flex items-center justify-around h-14 px-2 shadow-strong"
+        className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-white/95 backdrop-blur-md flex items-center justify-around h-14 px-1 shadow-strong"
         style={{ borderColor: 'var(--color-border)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         <Link
           to="/"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold py-1 px-3 ${
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold py-1 px-2.5 ${
             location.pathname === '/' ? 'text-indigo-600 font-bold' : 'text-slate-500'
           }`}
         >
           <span>Home</span>
         </Link>
-        <Link
-          to="/categories"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold py-1 px-3 ${
-            location.pathname.startsWith('/categories') ? 'text-indigo-600 font-bold' : 'text-slate-500'
-          }`}
-        >
-          <span>Collections</span>
-        </Link>
+
         <Link
           to="/products"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold py-1 px-3 ${
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold py-1 px-2.5 ${
             location.pathname.startsWith('/products') ? 'text-indigo-600 font-bold' : 'text-slate-500'
           }`}
         >
           <span>Shop</span>
         </Link>
+
+        {/* Mobile Cart Button */}
+        <button
+          onClick={openCart}
+          className="relative flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold py-1 px-2.5 text-slate-700"
+          aria-label="Open Cart"
+        >
+          <div className="relative">
+            <ShoppingBag size={17} />
+            {totalItems > 0 && (
+              <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-0.5 rounded-full bg-indigo-600 text-white text-[9px] font-black flex items-center justify-center">
+                {totalItems}
+              </span>
+            )}
+          </div>
+          <span>Cart</span>
+        </button>
+
+        {/* Mobile Showroom Tokens Link */}
         <Link
-          to="/offers"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold py-1 px-3 ${
-            location.pathname === '/offers' ? 'text-indigo-600 font-bold' : 'text-slate-500'
+          to="/my-tokens"
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold py-1 px-2.5 ${
+            location.pathname === '/my-tokens' ? 'text-indigo-600 font-bold' : 'text-slate-500'
           }`}
         >
-          <span>Offers</span>
+          <Ticket size={17} />
+          <span>Tokens</span>
         </Link>
+
         <Link
           to="/contact"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold py-1 px-3 ${
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold py-1 px-2.5 ${
             location.pathname === '/contact' ? 'text-indigo-600 font-bold' : 'text-slate-500'
           }`}
         >
           <span>Showroom</span>
         </Link>
       </nav>
+
+      {/* Customer Authentication Modal */}
+      <CustomerAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
 
     </div>
   );

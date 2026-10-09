@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Star, Eye, ArrowUpRight } from 'lucide-react';
+import { Heart, Star, Eye, ArrowUpRight, ShoppingBag, Check } from 'lucide-react';
+import { useCart } from '../contexts/CartContext';
 import type { Product } from '../types/electronics';
 
 interface Props {
@@ -9,6 +10,9 @@ interface Props {
 
 export default function ProductCard({ product }: Props) {
   const [wishlisted, setWishlisted] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
+  const { addToCart, items } = useCart();
+  const isInCart = items.some(i => i.productId === product.id);
 
   const primaryImage =
     product.images?.find(img => img.isPrimary)?.imageUrl ||
@@ -27,6 +31,15 @@ export default function ProductCard({ product }: Props) {
 
   const isOutOfStock = product.availability === 'OUT_OF_STOCK' || product.stockQuantity === 0;
   const isLowStock = !isOutOfStock && product.stockQuantity > 0 && product.stockQuantity <= 5;
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isOutOfStock) return;
+    addToCart(product);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1800);
+  };
 
   return (
     <div className="group relative flex flex-col p-3 rounded-[2rem] transition-all duration-300 hover:-translate-y-1 hover:shadow-medium border border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-surface)]">
@@ -97,12 +110,22 @@ export default function ProductCard({ product }: Props) {
           />
         </button>
 
-        {/* Glassmorphic Quick View Overlay */}
-        <div className="absolute inset-x-3 bottom-3 flex items-center justify-center opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none">
-          <div className="glass-pill w-full py-2.5 px-4 rounded-full flex items-center justify-center gap-1.5 text-xs font-bold text-[var(--color-primary)] shadow-sm pointer-events-auto">
+        {/* Glassmorphic Quick View & Add Button Overlay */}
+        <div className="absolute inset-x-3 bottom-3 flex items-center gap-2 opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none">
+          <div className="glass-pill flex-1 py-2 px-3 rounded-full flex items-center justify-center gap-1.5 text-xs font-bold text-[var(--color-primary)] shadow-sm pointer-events-auto hover:bg-white transition-colors">
             <Eye size={13} />
-            <span>View Product</span>
+            <span>View</span>
           </div>
+          <button
+            onClick={handleAddToCart}
+            disabled={isOutOfStock}
+            className={`glass-pill py-2 px-3.5 rounded-full flex items-center justify-center gap-1.5 text-xs font-bold text-white shadow-sm pointer-events-auto transition-transform active:scale-95 ${
+              isOutOfStock ? 'bg-slate-400 cursor-not-allowed' : 'bg-indigo-600/90 hover:bg-indigo-600'
+            }`}
+          >
+            {justAdded ? <Check size={13} className="text-emerald-300" /> : <ShoppingBag size={13} />}
+            <span>{justAdded ? 'Added' : 'Add'}</span>
+          </button>
         </div>
       </Link>
 
@@ -167,6 +190,30 @@ export default function ProductCard({ product }: Props) {
             EMI from <span className="font-bold text-[var(--color-text)]">₹{emiAmount.toLocaleString('en-IN')}/mo</span>
           </p>
         )}
+
+        {/* Quick Action: Add to Cart */}
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--color-border)]/40">
+          <div className="text-[10px] font-semibold text-emerald-700 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Showroom Ready</span>
+          </div>
+          <button
+            onClick={handleAddToCart}
+            disabled={isOutOfStock}
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all ${
+              justAdded
+                ? 'bg-emerald-600 text-white'
+                : isOutOfStock
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : isInCart
+                ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-xs'
+            }`}
+          >
+            {justAdded ? <Check size={12} /> : <ShoppingBag size={12} />}
+            <span>{justAdded ? 'Added!' : isOutOfStock ? 'Out of Stock' : isInCart ? 'In Cart (+)' : 'Add'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );

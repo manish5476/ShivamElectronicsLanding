@@ -1,7 +1,8 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState } from 'react';
-import { ChevronRight, Star, Phone, MessageCircle, Share2, Heart, ShieldCheck, Truck, Sparkles, CreditCard, Wrench, ArrowLeft } from 'lucide-react';
+import { ChevronRight, Star, Phone, MessageCircle, Share2, Heart, ShieldCheck, Truck, Sparkles, CreditCard, Wrench, ArrowLeft, ShoppingBag, Check } from 'lucide-react';
 import { useProducts } from '../hooks/useElectronicsData';
+import { useCart } from '../contexts/CartContext';
 import ProductCard from '../components/ProductCard';
 import EnquiryModal from '../components/EnquiryModal';
 import ScrollReveal from '../components/ScrollReveal';
@@ -9,9 +10,11 @@ import ScrollReveal from '../components/ScrollReveal';
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const { products, loading } = useProducts();
+  const { addToCart, openCart } = useCart();
   const [activeImage, setActiveImage] = useState(0);
   const [isEnquiryOpen, setIsEnquiryOpen] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
 
   const product = products.find(p => p.slug === slug);
 
@@ -231,17 +234,32 @@ export default function ProductDetail() {
               {/* Action Buttons */}
               <div className="space-y-3 pt-2">
                 <button
-                  onClick={() => setIsEnquiryOpen(true)}
-                  className="btn btn-primary w-full py-4 text-xs font-bold shadow-md hover:scale-[1.01] transition-transform"
+                  onClick={() => {
+                    addToCart(product);
+                    setJustAdded(true);
+                    setTimeout(() => setJustAdded(false), 2000);
+                    openCart();
+                  }}
+                  className="btn btn-primary w-full py-4 text-xs font-bold shadow-md hover:scale-[1.01] transition-transform flex items-center justify-center gap-2"
                 >
-                  <MessageCircle size={15} /> Enquire Best Showroom Price
+                  {justAdded ? <Check size={16} /> : <ShoppingBag size={16} />}
+                  <span>{justAdded ? 'Added to Cart!' : 'Add to Cart & Lock Showroom Price'}</span>
                 </button>
-                <Link
-                  to="/contact?tab=booking"
-                  className="btn btn-outline w-full py-3.5 text-xs font-bold"
-                >
-                  Book Live In-Store Demo
-                </Link>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    onClick={() => setIsEnquiryOpen(true)}
+                    className="btn btn-outline py-3 text-xs font-bold flex items-center justify-center gap-1.5"
+                  >
+                    <MessageCircle size={14} /> Enquire Price
+                  </button>
+                  <Link
+                    to="/contact?tab=booking"
+                    className="btn btn-outline py-3 text-xs font-bold flex items-center justify-center text-center"
+                  >
+                    Book Store Demo
+                  </Link>
+                </div>
               </div>
 
               {/* Showroom Trust Pillars */}

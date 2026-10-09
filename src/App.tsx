@@ -17,6 +17,9 @@ import Contact from './pages/Contact';
 import Gallery from './pages/Gallery';
 import { Privacy, Terms } from './pages/StaticPages';
 import NotFound from './pages/NotFound';
+import MyTokens from './pages/MyTokens';
+import { CartProvider } from './contexts/CartContext';
+import CartDrawer from './components/CartDrawer';
 
 // Admin pages
 import AdminLogin from './pages/admin/Login';
@@ -50,57 +53,61 @@ export default function App() {
     <AuthProvider>
       <ThemeProvider>
         <SiteSettingsProvider>
-          <HashRouter>
-            <Routes>
-              {/* Admin Routes */}
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<Dashboard />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="products" element={<ProductsManager />} />
-                <Route path="inventory" element={<InventoryManager />} />
-                <Route path="categories" element={<CategoriesManager />} />
-                <Route path="brands" element={<BrandsManager />} />
-                <Route path="enquiries" element={<EnquiriesManager />} />
-                <Route path="bookings" element={<BookingsManager />} />
-                <Route path="documents" element={<DocumentsManager />} />
-                <Route path="company" element={<CompanyManager />} />
-                <Route path="setup" element={<SetupGuide />} />
-                <Route path="appearance" element={<AppearanceStudio />} />
-                <Route path="media" element={<MediaLibrary />} />
-                <Route path="users" element={<UsersManager />} />
-                <Route path="activity" element={<ActivityLog />} />
-                <Route path="settings" element={<SiteSettingsManager />} />
-              </Route>
+          <CartProvider>
+            <HashRouter>
+              <Routes>
+                {/* Admin Routes */}
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="products" element={<ProductsManager />} />
+                  <Route path="inventory" element={<InventoryManager />} />
+                  <Route path="categories" element={<CategoriesManager />} />
+                  <Route path="brands" element={<BrandsManager />} />
+                  <Route path="enquiries" element={<EnquiriesManager />} />
+                  <Route path="bookings" element={<BookingsManager />} />
+                  <Route path="documents" element={<DocumentsManager />} />
+                  <Route path="company" element={<CompanyManager />} />
+                  <Route path="setup" element={<SetupGuide />} />
+                  <Route path="appearance" element={<AppearanceStudio />} />
+                  <Route path="media" element={<MediaLibrary />} />
+                  <Route path="users" element={<UsersManager />} />
+                  <Route path="activity" element={<ActivityLog />} />
+                  <Route path="settings" element={<SiteSettingsManager />} />
+                </Route>
 
-              {/* Public Routes */}
-              <Route path="*" element={
-                <ElectronicsLayout>
-                  <Routes>
-                    <Route path="/" element={<ElectronicsHome />} />
-                    <Route path="/products" element={<Products />} />
-                    <Route path="/products/:slug" element={<ProductDetail />} />
-                    <Route path="/categories" element={<Categories />} />
-                    <Route path="/categories/:slug" element={<CategoryDetail />} />
-                    <Route path="/brands" element={<Brands />} />
-                    <Route path="/offers" element={<Offers />} />
-                    <Route path="/gallery" element={<Gallery />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/showroom" element={<Contact />} />
-                    <Route path="/privacy" element={<Privacy />} />
-                    <Route path="/terms" element={<Terms />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </ElectronicsLayout>
-              } />
-            </Routes>
-            <EnquiryModal
-              isOpen={isEnquiryModalOpen}
-              onClose={() => setIsEnquiryModalOpen(false)}
-              prefillProduct={enquiryPrefill}
-            />
-          </HashRouter>
+                {/* Public Routes */}
+                <Route path="*" element={
+                  <ElectronicsLayout>
+                    <Routes>
+                      <Route path="/" element={<ElectronicsHome />} />
+                      <Route path="/products" element={<Products />} />
+                      <Route path="/products/:slug" element={<ProductDetail />} />
+                      <Route path="/categories" element={<Categories />} />
+                      <Route path="/categories/:slug" element={<CategoryDetail />} />
+                      <Route path="/brands" element={<Brands />} />
+                      <Route path="/offers" element={<Offers />} />
+                      <Route path="/gallery" element={<Gallery />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/showroom" element={<Contact />} />
+                      <Route path="/my-tokens" element={<MyTokens />} />
+                      <Route path="/privacy" element={<Privacy />} />
+                      <Route path="/terms" element={<Terms />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </ElectronicsLayout>
+                } />
+              </Routes>
+              <CartDrawer />
+              <EnquiryModal
+                isOpen={isEnquiryModalOpen}
+                onClose={() => setIsEnquiryModalOpen(false)}
+                prefillProduct={enquiryPrefill}
+              />
+            </HashRouter>
+          </CartProvider>
         </SiteSettingsProvider>
       </ThemeProvider>
     </AuthProvider>
